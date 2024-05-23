@@ -6,14 +6,12 @@ import { ApiResponse } from '../utils/apiResponse.js'
 
 const registerUser = asyncHandler( async (req, res) => {
     const {username, email, fullname, password} = req.body
-    console.log(username,email,fullname,password)
 
     if([fullname,email,username,password].some(field => field?.trim() === "" || field===undefined)){
-        console.log("Failed")
         throw new ApiError(400,"fullname is required")
     }
     
-    const existedUser = User.findOne({
+    const existedUser = await User.findOne({
         $or:[{username},{email}]
     })
 
@@ -22,14 +20,17 @@ const registerUser = asyncHandler( async (req, res) => {
     }
 
     const avatarLocalPath = req.files?.avatar[0]?.path
-    const coverImgLocalPath = req.coverImg?.avatar[0]?.path
+    const coverImgLocalPath = req.files?.coverImg[0]?.path
 
     if(!avatarLocalPath){
         throw new ApiError(400,"Avatar file is required")
     }
 
     const avatarImg = await uploadOnCloudinary(avatarLocalPath)
-    const coverImg = await uploadOnCloudinary(coverImgLocalPath)
+    let coverImg;
+    if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
+        coverImg = req.files.coverImage[0].path
+    }
 
     if(!avatarImg){
         throw new ApiError(400, "Avatar file is required")
